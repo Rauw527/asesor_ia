@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: asesor_ia_db
+    environment:
+      POSTGRES_USER: asesor
+      POSTGRES_PASSWORD: asesor
+      POSTGRES_DB: asesor_ia
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asesor -d asesor_ia"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: asesor_ia_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+psycopg://asesor:asesor@db:5432/asesor_ia
+      - REDIS_URL=
+      - GEMINI_MODEL=gemini-flash-latest
+      - GEMINI_TIMEOUT_SECONDS=60
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - MAX_UPLOAD_MB=8
+      - IMAGE_MAX_SIDE=1024
+      - CORS_ORIGINS=http://localhost:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build: ./frontend
+    container_name: asesor_ia_frontend
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  pgdata:

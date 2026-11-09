@@ -1,0 +1,24 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = [
+  # FastAPI resolves `Depends(...)`/`Query(...)` defaults at import time; this is
+  # the documented injection idiom, not a bugbear violation.
+  "B008",
+  # The formatter owns line width.
+  "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+  "ignore::DeprecationWarning:google.genai.*",
+  "ignore:Using `httpx` with `starlette.testclient`:DeprecationWarning",
+]
