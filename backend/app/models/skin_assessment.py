@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, String, ForeignKey
+from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -31,11 +31,9 @@ class SkinAssessment(Base):
         String(40), default="questionnaire"
     )  # "questionnaire" | "visual" | "mixed"
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        UTCDateTime(), default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
 
-    user: Mapped["User"] = relationship(back_populates="skin_assessments")
+    user: Mapped[User] = relationship(back_populates="skin_assessments")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<SkinAssessment user={self.user_id} type={self.perceived_skin_type}>"

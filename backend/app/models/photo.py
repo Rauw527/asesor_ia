@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -30,7 +30,7 @@ class Photo(Base):
     consent_version: Mapped[str | None] = mapped_column(String(40), default=None)
     uploaded_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
-    user: Mapped["User"] = relationship(back_populates="photos")
+    user: Mapped[User] = relationship(back_populates="photos")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Photo {self.photo_type} user={self.user_id}>"

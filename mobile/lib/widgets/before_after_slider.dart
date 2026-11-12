@@ -42,8 +42,7 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
             final width = constraints.maxWidth;
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapDown: (details) =>
-                  _moveTo(details.localPosition.dx, width),
+              onTapDown: (details) => _moveTo(details.localPosition.dx, width),
               onHorizontalDragStart: (details) =>
                   _moveTo(details.localPosition.dx, width),
               onHorizontalDragUpdate: (details) =>

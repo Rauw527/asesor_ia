@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Text, ForeignKey
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -22,12 +22,10 @@ class Questionnaire(Base):
     user_id: Mapped[str] = mapped_column(String(32), ForeignKey("users.id"), index=True)
     completed: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        UTCDateTime(), default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
 
-    user: Mapped["User"] = relationship(back_populates="questionnaires")
-    answers: Mapped[list["QuestionnaireAnswer"]] = relationship(
+    user: Mapped[User] = relationship(back_populates="questionnaires")
+    answers: Mapped[list[QuestionnaireAnswer]] = relationship(
         back_populates="questionnaire", cascade="all, delete-orphan"
     )
 
@@ -46,7 +44,7 @@ class QuestionnaireAnswer(Base):
     answer_value: Mapped[str] = mapped_column(Text)
     answer_type: Mapped[str] = mapped_column(String(30), default="single")  # single, multi, text
 
-    questionnaire: Mapped["Questionnaire"] = relationship(back_populates="answers")
+    questionnaire: Mapped[Questionnaire] = relationship(back_populates="answers")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Answer {self.question_key}={self.answer_value[:20]}>"

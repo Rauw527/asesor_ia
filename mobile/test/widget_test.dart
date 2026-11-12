@@ -2,103 +2,170 @@ import 'package:asesor_ia/main.dart';
 import 'package:asesor_ia/models/routine.dart';
 import 'package:asesor_ia/models/user_profile.dart';
 import 'package:asesor_ia/services/asesor_api.dart';
-import 'package:asesor_ia/theme/app_theme.dart';
-import 'package:asesor_ia/widgets/metric_card.dart';
+import 'package:asesor_ia/views/android_demo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Avoids network calls while still exercising the real controllers.
-class _FakeApi extends AsesorApi {
+class FakeApi extends AsesorApi {
+  bool signedIn = false;
+  Map<String, String>? savedAnswers;
+  final Map<String, bool> decisions = {};
   @override
-  Future<UserProfile> me() async {
-    return const UserProfile(
-      id: 'demo',
-      email: 'demo@asesor.ia',
-      fullName: 'Ana Torres',
-      onboardingCompleted: true,
-      skinProfile: SkinProfile(
-        skinType: 'Mixta',
-        hydrationLevel: 62,
-        undertone: 'Cálido',
-        detectedIssues: ['Poros dilatados'],
-        recommendations: ['Limpiador suave'],
-      ),
-    );
+  String? get token => signedIn ? 'test-token' : null;
+  @override
+  Future<void> login(String email, String password) async {
+    signedIn = true;
   }
 
   @override
-  Future<RoutineDay> routineToday({DateTime? date}) async {
-    return RoutineDay(
-      date: date ?? DateTime.now(),
-      allowedSteps: const {
-        'AM': ['limpiador', 'vitamina_c', 'hidratante', 'protector_solar'],
-        'PM': ['limpiador', 'tratamiento', 'hidratante'],
-      },
-      streakDays: 3,
-    );
+  void logout() {
+    signedIn = false;
   }
 
+  @override
+  Future<UserProfile> me() async => const UserProfile(
+    id: 'test',
+    email: 'test@example.org',
+    fullName: 'Ana Torres',
+    onboardingCompleted: false,
+  );
+  @override
+  Future<Map<String, dynamic>?> questionnaire() async =>
+      savedAnswers == null ? null : {'completed': true};
+  @override
+  Future<List<dynamic>> photos() async => [];
+  @override
+  Future<List<dynamic>> consents() async => [];
+  @override
+  Future<List<dynamic>> analyses() async => [];
+  @override
+  Future<void> saveConsent(String type, bool granted) async {
+    decisions[type] = granted;
+  }
+
+  @override
+  Future<void> saveQuestionnaire(Map<String, String> answers) async {
+    savedAnswers = Map.from(answers);
+  }
+
+  @override
+  Future<Map<String, dynamic>> buildProfile() async => {
+    'perceived_skin_type': null,
+    'sensitivity': null,
+    'main_concerns': [],
+  };
+  @override
+  Future<RoutineDay> routineToday({DateTime? date}) async => RoutineDay(
+    date: date ?? DateTime.now(),
+    allowedSteps: const {
+      'AM': ['limpiador', 'hidratante', 'protector_solar'],
+      'PM': ['limpiador', 'hidratante'],
+    },
+    streakDays: 3,
+  );
   @override
   Future<RoutineLog> checkin({
     required String period,
     required List<String> completedSteps,
     String notes = '',
-  }) async {
-    return RoutineLog(
-      period: period,
-      completedSteps: completedSteps,
-      notes: notes,
-      completed: false,
-    );
-  }
+  }) async => RoutineLog(
+    period: period,
+    completedSteps: completedSteps,
+    notes: notes,
+    completed: false,
+  );
 }
 
 void main() {
-  testWidgets('home renders the profile summary and routine', (tester) async {
-    await tester.pumpWidget(AsesorIaApp(api: _FakeApi()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('Hola, Ana'), findsOneWidget);
-    expect(find.text('Tu piel'), findsOneWidget);
-    expect(find.text('Mixta'), findsOneWidget);
-    expect(find.text('Cálido'), findsOneWidget);
-    expect(find.text('Rutina de hoy'), findsOneWidget);
-    expect(find.text('3 días'), findsOneWidget);
-    expect(find.text('Limpiador'), findsNWidgets(2));
-  });
-
-  testWidgets('checking a step keeps the local state', (tester) async {
-    await tester.pumpWidget(AsesorIaApp(api: _FakeApi()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    final checkbox = find.byType(Checkbox).first;
-    expect(checkbox, findsOneWidget);
-
-    await tester.tap(checkbox);
-    await tester.pump();
-
-    final updated = tester.widget<Checkbox>(checkbox);
-    expect(updated.value, isTrue);
-  });
-
-  testWidgets('MetricCard renders its value and progress bar', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: const Scaffold(
-          body: MetricCard(
-            label: 'Progreso',
-            value: '42%',
-            progress: 0.42,
-          ),
-        ),
-      ),
+  testWidgets('rejects public HTTP before sending account credentials', (
+    tester,
+  ) async {
+    final api = FakeApi();
+    await tester.pumpWidget(AsesorIaApp(api: api));
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Correo'),
+      'test@example.org',
     );
-
-    expect(find.text('Progreso'), findsOneWidget);
-    expect(find.text('42%'), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Contraseña'),
+      'test-password',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Dirección del servidor'),
+      'http://10.attacker.example',
+    );
+    await tester.ensureVisible(find.text('Entrar'));
+    await tester.tap(find.text('Entrar'));
+    await tester.pumpAndSettle();
+    expect(api.signedIn, isFalse);
+    expect(
+      find.text(
+        'Usa una dirección HTTPS, o HTTP para el servidor de pruebas en tu red local.',
+      ),
+      findsOneWidget,
+    );
   });
+  testWidgets('requires login before showing personal content', (tester) async {
+    await tester.pumpWidget(AsesorIaApp(api: FakeApi()));
+    expect(find.text('Entrar'), findsOneWidget);
+    expect(find.text('Seguimiento diario'), findsNothing);
+    expect(find.text('Contraseña'), findsOneWidget);
+  });
+  testWidgets('login opens isolated dashboard and logout returns to login', (
+    tester,
+  ) async {
+    final api = FakeApi();
+    await tester.pumpWidget(AsesorIaApp(api: api));
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Correo'),
+      'test@example.org',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Contraseña'),
+      'test-password',
+    );
+    await tester.ensureVisible(find.text('Entrar'));
+    await tester.tap(find.text('Entrar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hola, Ana'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Racha: 3 días'), 250);
+    expect(find.text('Racha: 3 días'), findsOneWidget);
+    await tester.tap(find.byTooltip('Cerrar sesión'));
+    await tester.pumpAndSettle();
+    expect(find.text('Entrar'), findsOneWidget);
+    expect(find.text('Hola, Ana'), findsNothing);
+  });
+  testWidgets(
+    'questionnaire can be completed without photos or forced answers',
+    (tester) async {
+      final api = FakeApi();
+      await tester.pumpWidget(MaterialApp(home: QuestionnairePage(api: api)));
+      for (var i = 0; i < 6; i++) {
+        await tester.scrollUntilVisible(find.text('Continuar'), 200);
+        await tester.tap(find.text('Continuar'));
+        await tester.pumpAndSettle();
+      }
+      await tester.ensureVisible(find.text('Guardar mi perfil'));
+      await tester.tap(find.text('Guardar mi perfil'));
+      await tester.pumpAndSettle();
+      expect(api.savedAnswers?.length, 7);
+      expect(api.savedAnswers?['irritates_easily'], 'No estoy seguro');
+    },
+  );
+  testWidgets(
+    'training preference starts unchecked and service stays independent',
+    (tester) async {
+      final api = FakeApi();
+      await tester.pumpWidget(MaterialApp(home: ConsentPage(api: api)));
+      await tester.pumpAndSettle();
+      final switches = tester.widgetList<Switch>(find.byType(Switch)).toList();
+      expect(switches.length, 2);
+      expect(switches.every((s) => !s.value), isTrue);
+      await tester.tap(find.byType(Switch).first);
+      await tester.ensureVisible(find.text('Guardar mis decisiones'));
+      await tester.tap(find.text('Guardar mis decisiones'));
+      await tester.pumpAndSettle();
+      expect(api.decisions, {'service': true, 'training': false});
+    },
+  );
 }

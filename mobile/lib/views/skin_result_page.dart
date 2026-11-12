@@ -58,8 +58,9 @@ class SkinResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final hydration =
-        (analysis.hydrationLevel / 100).clamp(0.0, 1.0).toDouble();
+    final hydration = (analysis.hydrationLevel / 100)
+        .clamp(0.0, 1.0)
+        .toDouble();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tu diagnóstico')),
@@ -117,7 +118,11 @@ class SkinResultPage extends StatelessWidget {
           if (analysis.recommendations.isNotEmpty) ...[
             const SizedBox(height: 24),
             const _SectionTitle('Tu rutina recomendada'),
-            for (var index = 0; index < analysis.recommendations.length; index++)
+            for (
+              var index = 0;
+              index < analysis.recommendations.length;
+              index++
+            )
               _NumberedRow(
                 index: index + 1,
                 text: analysis.recommendations[index],
@@ -237,10 +242,9 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -323,10 +327,7 @@ class _ProductCard extends StatelessWidget {
                     color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    product.brand,
-                    style: theme.textTheme.labelSmall,
-                  ),
+                  child: Text(product.brand, style: theme.textTheme.labelSmall),
                 ),
               ],
             ),

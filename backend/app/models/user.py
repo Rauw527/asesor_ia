@@ -9,19 +9,18 @@ from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
-from app.models.types import UTCDateTime, new_id, utcnow
 
 # Importación en tiempo de ejecución (no solo TYPE_CHECKING) para que
 # SQLAlchemy pueda resolver las clases relacionadas en las relaciones.
 from app.models.consent import Consent  # noqa: F401
 from app.models.photo import Photo  # noqa: F401
 from app.models.questionnaire import Questionnaire  # noqa: F401
+from app.models.routine import Routine  # noqa: F401
 from app.models.skin_analysis import SkinAnalysis  # noqa: F401
 from app.models.skin_assessment import SkinAssessment  # noqa: F401
-from app.models.routine import Routine  # noqa: F401
+from app.models.types import UTCDateTime, new_id, utcnow
 
 if TYPE_CHECKING:
-    from app.models.catalog_product import CatalogProduct
     from app.models.product import Product
     from app.models.routine_log import RoutineLog
     from app.models.skin_evolution_log import SkinEvolutionLog
@@ -54,9 +53,7 @@ class User(Base):
     consents: Mapped[list[Consent]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    photos: Mapped[list[Photo]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
+    photos: Mapped[list[Photo]] = relationship(back_populates="user", cascade="all, delete-orphan")
     questionnaires: Mapped[list[Questionnaire]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )

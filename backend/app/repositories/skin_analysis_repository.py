@@ -44,7 +44,5 @@ def list_analyses(db: Session, user_id: str) -> list[SkinAnalysis]:
 
 def get_analysis(db: Session, analysis_id: str, user_id: str) -> SkinAnalysis | None:
     return db.execute(
-        select(SkinAnalysis).where(
-            SkinAnalysis.id == analysis_id, SkinAnalysis.user_id == user_id
-        )
+        select(SkinAnalysis).where(SkinAnalysis.id == analysis_id, SkinAnalysis.user_id == user_id)
     ).scalar_one_or_none()

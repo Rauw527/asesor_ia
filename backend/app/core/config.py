@@ -1,5 +1,6 @@
 """Typed application settings loaded from the environment / .env file."""
 
+import secrets
 from functools import lru_cache
 from pathlib import Path
 
@@ -37,6 +38,7 @@ class Settings(BaseSettings):
 
     # --- Gemini ------------------------------------------------------
     gemini_api_key: str | None = None
+    enable_experimental_ai: bool = False
     # `gemini-1.5-flash` was shut down by Google; `gemini-flash-latest` is the
     # hot-swapped alias of the current stable Flash model. Override with
     # GEMINI_MODEL when you need to pin an exact version.
@@ -71,7 +73,7 @@ class Settings(BaseSettings):
     demo_user_name: str = "Demo User"
 
     # --- Auth / JWT ----------------------------------------------------
-    secret_key: str = "dev-secret-change-me"
+    secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(48))
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7
 

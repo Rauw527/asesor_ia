@@ -1,11 +1,18 @@
-"""Consent business logic (A: service, B: training)."""
+"""Consent enforcement. Training permission is never required for the service."""
 
-from __future__ import annotations
-
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 from app.repositories import consent_repository
 from app.schemas.consent import ConsentCreate, ConsentOut
+
+
+def require_service_consent(db, user_id):
+    consent = consent_repository.get_consent(db, user_id, "service")
+    if not consent or not consent.granted:
+        raise HTTPException(
+            403, "Acepta el uso de fotografías para el servicio antes de subirlas o analizarlas."
+        )
+    return consent
 
 
 def save_consent(db, user_id: str, payload: ConsentCreate) -> ConsentOut:
@@ -22,8 +29,7 @@ def save_consent(db, user_id: str, payload: ConsentCreate) -> ConsentOut:
 
 
 def list_user_consents(db, user_id: str) -> list[ConsentOut]:
-    consents = consent_repository.list_consents(db, user_id)
-    return [ConsentOut.model_validate(c) for c in consents]
+    return [ConsentOut.model_validate(c) for c in consent_repository.list_consents(db, user_id)]
 
 
 def is_training_consent_granted(db, user_id: str) -> bool:

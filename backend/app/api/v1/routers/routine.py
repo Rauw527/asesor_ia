@@ -7,9 +7,8 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
-from app.core.config import get_settings
-from app.repositories import user_repository
+from app.api.deps import get_current_user, get_db
+from app.models.user import User
 from app.schemas.routine import (
     RoutineCheckinRequest,
     RoutineCheckinResponse,
@@ -26,9 +25,10 @@ router = APIRouter(prefix="/routine", tags=["routine"])
     summary="Registra el checklist AM o PM del día",
 )
 def checkin(
-    payload: RoutineCheckinRequest, db: Session = Depends(get_db)
+    payload: RoutineCheckinRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> RoutineCheckinResponse:
-    user = user_repository.resolve_user(db, payload.user_id, get_settings())
     return routine_service.checkin(db, user=user, payload=payload)
 
 
@@ -38,9 +38,8 @@ def checkin(
     summary="Estado del día, pasos permitidos y racha",
 )
 def today(
-    user_id: str | None = None,
+    user: User = Depends(get_current_user),
     on_date: date | None = Query(default=None, alias="date"),
     db: Session = Depends(get_db),
 ) -> RoutineDayResponse:
-    user = user_repository.resolve_user(db, user_id, get_settings())
     return routine_service.day(db, user=user, on_date=on_date or date.today())

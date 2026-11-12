@@ -12,10 +12,21 @@ class RoutineController extends ChangeNotifier {
   RoutineController(this._api);
 
   final AsesorApi _api;
+  bool _disposed = false;
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
 
   static const Map<String, List<String>> fallbackSteps = {
-    'AM': ['limpiador', 'vitamina_c', 'hidratante', 'protector_solar'],
-    'PM': ['limpiador', 'tratamiento', 'hidratante'],
+    'AM': ['limpiador', 'hidratante', 'protector_solar'],
+    'PM': ['limpiador', 'hidratante'],
   };
 
   RoutineDay? _day;
@@ -23,10 +34,7 @@ class RoutineController extends ChangeNotifier {
   String? _error;
   int _streakDays = 0;
 
-  final Map<String, Set<String>> _steps = {
-    'AM': <String>{},
-    'PM': <String>{},
-  };
+  final Map<String, Set<String>> _steps = {'AM': <String>{}, 'PM': <String>{}};
   final Map<String, Set<String>> _confirmed = {
     'AM': <String>{},
     'PM': <String>{},
@@ -42,8 +50,7 @@ class RoutineController extends ChangeNotifier {
   List<String> stepsFor(String period) =>
       _day?.allowedSteps[period] ?? fallbackSteps[period] ?? const <String>[];
 
-  Set<String> completedFor(String period) =>
-      _steps[period] ?? const <String>{};
+  Set<String> completedFor(String period) => _steps[period] ?? const <String>{};
 
   bool savingPeriod(String period) => _saving.contains(period);
 

@@ -44,9 +44,9 @@ class RoutineDay {
     final rawSteps = json['allowed_steps'];
     if (rawSteps is Map<String, dynamic>) {
       rawSteps.forEach((key, value) {
-        steps[key] = (value as List<dynamic>? ?? [])
-            .whereType<String>()
-            .toList(growable: false);
+        steps[key] = (value as List<dynamic>? ?? []).whereType<String>().toList(
+          growable: false,
+        );
       });
     }
 
@@ -54,7 +54,9 @@ class RoutineDay {
     final rawPm = json['pm'];
 
     return RoutineDay(
-      date: DateTime.tryParse(json['log_date'] as String? ?? '') ?? DateTime.now(),
+      date:
+          DateTime.tryParse(json['log_date'] as String? ?? '') ??
+          DateTime.now(),
       allowedSteps: steps,
       streakDays: (json['streak_days'] as num?)?.round() ?? 0,
       am: rawAm is Map<String, dynamic> ? RoutineLog.fromJson(rawAm) : null,

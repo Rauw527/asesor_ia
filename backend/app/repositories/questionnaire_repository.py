@@ -8,9 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.questionnaire import Questionnaire, QuestionnaireAnswer
 
 
-def save_questionnaire(
-    db: Session, user_id: str, answers: list[dict]
-) -> Questionnaire:
+def save_questionnaire(db: Session, user_id: str, answers: list[dict]) -> Questionnaire:
     questionnaire = Questionnaire(user_id=user_id, completed=True)
     db.add(questionnaire)
     db.flush()
@@ -29,8 +27,12 @@ def save_questionnaire(
 
 
 def get_latest_questionnaire(db: Session, user_id: str) -> Questionnaire | None:
-    return db.execute(
-        select(Questionnaire)
-        .where(Questionnaire.user_id == user_id)
-        .order_by(Questionnaire.created_at.desc())
-    ).scalars().first()
+    return (
+        db.execute(
+            select(Questionnaire)
+            .where(Questionnaire.user_id == user_id)
+            .order_by(Questionnaire.created_at.desc())
+        )
+        .scalars()
+        .first()
+    )

@@ -18,6 +18,11 @@ from app.core.config import Settings
 from app.core.exceptions import InvalidImageError
 
 
+def read_upload(upload, config):
+    raw = upload.file.read(config.max_upload_mb * 1024 * 1024 + 1)
+    return raw
+
+
 @dataclass(frozen=True)
 class PreparedImage:
     data: bytes
@@ -38,8 +43,13 @@ def prepare_image(raw: bytes, config: Settings) -> PreparedImage:
 
     try:
         with Image.open(io.BytesIO(raw)) as probe:
+            if (
+                probe.format not in {"JPEG", "PNG", "WEBP"}
+                or probe.width * probe.height > 40_000_000
+            ):
+                raise InvalidImageError("Formato o dimensiones de imagen no permitidos.")
             probe.verify()
-    except (UnidentifiedImageError, OSError) as exc:
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
         raise InvalidImageError(
             "El archivo no es una imagen válida (se esperaba JPEG, PNG o WebP)."
         ) from exc
@@ -68,7 +78,7 @@ def prepare_image(raw: bytes, config: Settings) -> PreparedImage:
         mime_type="image/jpeg",
         width=width,
         height=height,
-        brightness=max(0, min(100, brightness)),
+        brightness=max(0, min(100, round(brightness / 2.55))),
         sha256=hashlib.sha256(data).hexdigest(),
     )
 

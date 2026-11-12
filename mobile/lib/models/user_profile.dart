@@ -63,10 +63,12 @@ class SkinProfile {
       skinType: json['skin_type'] as String?,
       hydrationLevel: (json['hydration_level'] as num?)?.round(),
       undertone: json['undertone'] as String?,
-      detectedIssues:
-          (json['detected_issues'] as List<dynamic>? ?? []).whereType<String>().toList(),
-      recommendations:
-          (json['recommendations'] as List<dynamic>? ?? []).whereType<String>().toList(),
+      detectedIssues: (json['detected_issues'] as List<dynamic>? ?? [])
+          .whereType<String>()
+          .toList(),
+      recommendations: (json['recommendations'] as List<dynamic>? ?? [])
+          .whereType<String>()
+          .toList(),
       colorimetrySeason: json['colorimetry_season'] as String?,
       bodyShape: json['body_shape'] as String?,
       stylePreference: json['style_preference'] as String?,

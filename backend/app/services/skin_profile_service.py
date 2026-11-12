@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from app.repositories import (
-    ingredient_repository,
     questionnaire_repository,
-    skin_assessment_repository,
     skin_analysis_repository,
+    skin_assessment_repository,
 )
 
 
@@ -20,7 +19,7 @@ def build_assessment(db, user_id: str):
 
     # Determine data source
     has_questionnaire = questionnaire is not None and questionnaire.completed
-    has_visual = latest_analysis is not None
+    has_visual = latest_analysis is not None and latest_analysis.analysis_status == "real"
 
     if has_questionnaire and has_visual:
         data_source = "mixed"
@@ -39,19 +38,23 @@ def build_assessment(db, user_id: str):
     if has_questionnaire:
         answers = {a.question_key: a.answer_value for a in questionnaire.answers}
         perceived_skin_type = answers.get("skin_feeling")
+        if perceived_skin_type in {"No estoy seguro", "No sé", ""}:
+            perceived_skin_type = None
         if answers.get("irritates_easily") == "Sí":
             sensitivity = "alta"
         elif answers.get("irritates_easily") == "Algunas veces":
             sensitivity = "media"
-        else:
+        elif answers.get("irritates_easily") == "No":
             sensitivity = "baja"
 
         concern = answers.get("main_concern")
         if concern:
-            main_concerns.append(concern)
+            main_concerns.extend(c.strip() for c in concern.split(",") if c.strip())
 
     # If visual analysis exists but is demo, observations are null (no real data)
-    visual_status = "demo"
+    visual_status = "not_available"
+    if latest_analysis:
+        visual_status = latest_analysis.analysis_status
     if latest_analysis and latest_analysis.analysis_status == "real":
         visual_status = "real"
 

@@ -29,9 +29,7 @@ def save_routine(
 def list_routines(db: Session, user_id: str) -> list[Routine]:
     return list(
         db.execute(
-            select(Routine)
-            .where(Routine.user_id == user_id)
-            .order_by(Routine.created_at.desc())
+            select(Routine).where(Routine.user_id == user_id).order_by(Routine.created_at.desc())
         ).scalars()
     )
 

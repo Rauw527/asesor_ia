@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
@@ -12,7 +13,6 @@ from app.services.skin_analysis_service import (
     list_user_analyses,
     run_analysis,
 )
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["skin-analysis"])
 
@@ -30,6 +30,14 @@ async def analyze_skin(
 ) -> AnalysisResultOut:
     # In MVP we don't store actual photo paths; photo_ids are enough.
     # The demo provider does not need real images.
+    from app.repositories.photo_repository import get_photo
+    from app.services.consent_service import require_service_consent
+
+    require_service_consent(db, current_user.id)
+    if not payload.photo_ids or any(
+        get_photo(db, photo_id, current_user.id) is None for photo_id in payload.photo_ids
+    ):
+        raise HTTPException(404, "Fotografías no encontradas")
     analysis = await run_analysis(
         db,
         user_id=current_user.id,
@@ -46,7 +54,7 @@ async def analyze_skin(
 
 
 @router.get(
-    "/analysis/{analysis_id}",
+    "/analysis/records/{analysis_id}",
     response_model=AnalysisOut,
     summary="Get a past skin analysis",
 )

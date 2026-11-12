@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String, Text, ForeignKey
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -29,11 +29,9 @@ class Consent(Base):
     granted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), default=None)
     withdrawn_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), default=None)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        UTCDateTime(), default=utcnow, onupdate=utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow, onupdate=utcnow)
 
-    user: Mapped["User"] = relationship(back_populates="consents")
+    user: Mapped[User] = relationship(back_populates="consents")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Consent {self.consent_type} granted={self.granted} user={self.user_id}>"

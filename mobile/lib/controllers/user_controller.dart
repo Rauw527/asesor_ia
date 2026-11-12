@@ -32,7 +32,8 @@ class UserController extends ChangeNotifier {
     } on ApiException catch (error) {
       _error = error.message;
     } catch (_) {
-      _error = 'No se pudo cargar tu perfil. Revisa la conexión con el servidor.';
+      _error =
+          'No se pudo cargar tu perfil. Revisa la conexión con el servidor.';
     } finally {
       _loading = false;
       notifyListeners();

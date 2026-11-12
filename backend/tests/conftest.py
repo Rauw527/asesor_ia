@@ -19,6 +19,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{(_TEST_ROOT / 'test.db').as_posix()}"
 os.environ["STORAGE_DIR"] = str(_TEST_ROOT / "storage")
 os.environ["GEMINI_API_KEY"] = ""
 os.environ["ENVIRONMENT"] = "test"
+os.environ["ENABLE_EXPERIMENTAL_AI"] = "true"
 os.environ["LOG_LEVEL"] = "WARNING"
 
 import pytest  # noqa: E402
@@ -128,6 +129,7 @@ def client(fake_gemini: FakeGemini):
 
     app.dependency_overrides[get_gemini] = lambda: fake_gemini
     with TestClient(app) as test_client:
+        authenticate_test_client(test_client)
         yield test_client
     app.dependency_overrides.clear()
 
@@ -144,6 +146,7 @@ def raw_client():
     init_db(engine)
 
     with TestClient(app) as test_client:
+        authenticate_test_client(test_client)
         yield test_client
 
 
@@ -157,3 +160,17 @@ def upload(name: str, content: bytes, mime: str = "image/jpeg") -> dict:
 
 
 __all__ = ["FakeGemini", "UnusableImage", "make_jpeg", "upload"]
+
+
+def authenticate_test_client(client):
+    user = {
+        "email": "tester@example.org",
+        "full_name": "Test User",
+        "password": "test-password-123",
+    }
+    client.post("/api/v1/auth/register", json=user)
+    token = client.post(
+        "/api/v1/auth/login", json={"email": user["email"], "password": user["password"]}
+    ).json()["access_token"]
+    client.headers["Authorization"] = "Bearer " + token
+    client.post("/api/v1/consents", json={"consent_type": "service", "granted": True})

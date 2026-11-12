@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 
 import '../models/inci_scan.dart';
@@ -54,7 +53,9 @@ class InciController extends ChangeNotifier {
   /// can flag real conflicts against it.
   Future<bool> addToRoutine() async {
     final result = _scan;
-    if (result == null || result.keyIngredients.isEmpty || _saving) return false;
+    if (result == null || result.keyIngredients.isEmpty || _saving) {
+      return false;
+    }
 
     _saving = true;
     _error = null;

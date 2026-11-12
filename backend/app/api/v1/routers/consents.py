@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_current_user, get_db
 from app.models.user import User
-from app.repositories import consent_repository
 from app.schemas.consent import ConsentCreate, ConsentOut
 from app.services.consent_service import (
     is_training_consent_granted,
     list_user_consents,
     save_consent,
 )
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["consents"])
 

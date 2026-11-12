@@ -33,7 +33,7 @@ def test_demo_user_is_created_on_first_read(client) -> None:
     response = client.get("/api/v1/users/me")
     assert response.status_code == 200
     body = response.json()
-    assert body["email"] == "demo@asesor.ia"
+    assert body["email"] == "tester@example.org"
     assert body["onboarding_completed"] is False
     assert body["skin_profile"] is None
 
@@ -86,11 +86,12 @@ def test_analyze_reports_unusable_face(client, fake_gemini: FakeGemini) -> None:
     assert "rostro" in response.json()["detail"]
 
 
-def test_analyze_unknown_user_returns_404(client) -> None:
+def test_analyze_ignores_client_supplied_identity(client) -> None:
     response = client.post(
         ANALYZE_URL, files=upload("selfie.jpg", make_jpeg()), data={"user_id": "deadbeef"}
     )
-    assert response.status_code == 404
+    assert response.status_code == 200
+    assert client.get("/api/v1/users/me").json()["email"] == "tester@example.org"
 
 
 # -------------------------------------------------------------- skin progress
@@ -186,7 +187,7 @@ def test_product_registry_lists_entries(client) -> None:
 
 # -------------------------------------------------------------------- routine
 def test_routine_checkin_marks_day_and_builds_streak(client) -> None:
-    steps = ["limpiador", "vitamina_c", "hidratante", "protector_solar"]
+    steps = ["limpiador", "hidratante", "protector_solar"]
     response = client.post(
         CHECKIN_URL,
         json={
@@ -206,7 +207,7 @@ def test_routine_checkin_marks_day_and_builds_streak(client) -> None:
     assert today["am"]["completed_steps"] == steps
     assert today["pm"] is None
     assert today["streak_days"] == 1
-    assert today["allowed_steps"]["PM"] == ["limpiador", "tratamiento", "hidratante"]
+    assert today["allowed_steps"]["PM"] == ["limpiador", "hidratante"]
 
 
 def test_routine_checkin_is_idempotent_per_day_and_period(client) -> None:

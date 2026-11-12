@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import DomainValidationError
 from app.models import User
-from app.repositories import routine_repository
+from app.repositories import routine_log_repository as routine_repository
 from app.schemas.routine import (
     ROUTINE_STEPS,
     RoutineCheckinRequest,
@@ -27,11 +27,7 @@ def checkin(db: Session, *, user: User, payload: RoutineCheckinRequest) -> Routi
             f"Permitidos: {', '.join(allowed)}."
         )
 
-    completed = (
-        payload.completed
-        if payload.completed is not None
-        else len(set(payload.completed_steps)) == len(allowed)
-    )
+    completed = set(payload.completed_steps) == set(allowed)
 
     log = routine_repository.upsert_log(
         db,

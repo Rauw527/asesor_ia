@@ -1,72 +1,60 @@
-"""Routine contracts (original Phase 1 + Fase 3 recommendations)."""
+"""Separate daily check-ins from generated routine plans."""
 
-from __future__ import annotations
+from datetime import date, datetime
+from typing import Any, Literal
 
-from datetime import datetime
-from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
-
-# --- Original Phase 1 routine schemas (expected by app/schemas/__init__.py) ---
-
-ROUTINE_STEPS: list[str] = ["cleansing", "moisturizing", "sunscreen", "treatment"]
+ROUTINE_STEPS = {
+    "AM": ["limpiador", "hidratante", "protector_solar"],
+    "PM": ["limpiador", "hidratante"],
+}
 
 
 class RoutineCheckinRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-
-    date: str
-    period: str = Field(pattern="^(AM|PM)$")
-    completed_steps: list[str] = Field(default_factory=list)
-    notes: str | None = None
-
-
-class RoutineCheckinResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: str
-    log_date: str
-    period: str
-    completed_steps: list[str]
-    notes: str | None
-    completed: bool
-
-
-class RoutineDayResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    date: str
-    morning: RoutineCheckinResponse | None = None
-    night: RoutineCheckinResponse | None = None
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    log_date: date = Field(default_factory=date.today)
+    period: Literal["AM", "PM"]
+    completed_steps: list[str] = Field(default_factory=list, max_length=20)
+    notes: str = Field(default="", max_length=2000)
+    completed: bool | None = None
 
 
 class RoutineLogOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
-    log_date: str
+    log_date: date
     period: str
     completed_steps: list[str]
-    notes: str | None
+    notes: str
     completed: bool
     created_at: datetime
 
 
-# --- Fase 3 recommendation schemas ---
+class RoutineCheckinResponse(BaseModel):
+    status: str = "saved"
+    log: RoutineLogOut
+
+
+class RoutineDayResponse(BaseModel):
+    log_date: date
+    am: RoutineLogOut | None = None
+    pm: RoutineLogOut | None = None
+    allowed_steps: dict[str, list[str]]
+    streak_days: int = 0
+
 
 class RoutineStepOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     order: int
     step: str
     title: str
     explanation: str
-    suggested_products: list[Any] = []
+    suggested_products: list[Any] = Field(default_factory=list)
 
 
 class RoutineOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
     id: str
     routine_type: str
     steps: list[dict[str, Any]]

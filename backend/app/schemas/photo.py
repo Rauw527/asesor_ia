@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+
+from pydantic import BaseModel, ConfigDict
 
 
 class PhotoOut(BaseModel):
@@ -11,7 +12,6 @@ class PhotoOut(BaseModel):
 
     id: str
     photo_type: str
-    storage_path: str
     original_filename: str | None
     content_type: str
     size_bytes: int

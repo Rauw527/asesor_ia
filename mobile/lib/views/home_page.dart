@@ -132,7 +132,10 @@ class _Header extends StatelessWidget {
 
   String _initials(String name) {
     if (name.isEmpty) return 'AI';
-    final parts = name.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    final parts = name
+        .split(RegExp(r'\s+'))
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     final first = parts.first.substring(0, 1);
     final last = parts.last.substring(0, 1);
@@ -194,7 +197,8 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 TextButton(
-                  onPressed: () => context.read<UserController>().load(force: true),
+                  onPressed: () =>
+                      context.read<UserController>().load(force: true),
                   child: const Text('Reintentar'),
                 ),
               ],
@@ -266,7 +270,9 @@ class _ProfileCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
-                  value: (profile.hydrationLevel! / 100).clamp(0.0, 1.0).toDouble(),
+                  value: (profile.hydrationLevel! / 100)
+                      .clamp(0.0, 1.0)
+                      .toDouble(),
                   minHeight: 7,
                 ),
               ),
@@ -479,7 +485,8 @@ class _PeriodChecklist extends StatelessWidget {
         for (final step in steps)
           CheckboxListTile(
             value: completed.contains(step),
-            onChanged: (_) => context.read<RoutineController>().toggle(period, step),
+            onChanged: (_) =>
+                context.read<RoutineController>().toggle(period, step),
             title: Text(routineStepLabels[step] ?? step),
             dense: true,
             contentPadding: EdgeInsets.zero,
@@ -562,7 +569,9 @@ class _ActionTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right, size: 20),

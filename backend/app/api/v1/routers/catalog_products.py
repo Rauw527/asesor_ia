@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.catalog_product import CatalogProductOut
 from app.services.product_service import get_product, list_products
-from sqlalchemy.orm import Session
 
-router = APIRouter(tags=["catalog-products"])
+router = APIRouter(prefix="/catalog", tags=["catalog-products"])
 
 
 @router.get(

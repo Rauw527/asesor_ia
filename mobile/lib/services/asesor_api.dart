@@ -12,6 +12,74 @@ class AsesorApi {
   AsesorApi({ApiClient? client}) : _client = client ?? ApiClient();
 
   final ApiClient _client;
+  String? get token => _client.token;
+  Map<String, String> get authHeaders => _client.authHeaders;
+  set onUnauthorized(void Function()? callback) =>
+      _client.onUnauthorized = callback;
+
+  Future<void> login(String email, String password) async {
+    final response = await _client.postJson('/auth/login', {
+      'email': email,
+      'password': password,
+    });
+    _client.token = response['access_token'] as String;
+  }
+
+  Future<void> register(String name, String email, String password) async {
+    await _client.postJson('/auth/register', {
+      'full_name': name,
+      'email': email,
+      'password': password,
+    });
+  }
+
+  void logout() => _client.token = null;
+  Future<List<dynamic>> consents() => _client.getList('/consents');
+  Future<void> saveConsent(String type, bool granted) async {
+    await _client.postJson('/consents', {
+      'consent_type': type,
+      'granted': granted,
+      'version': 'android-demo-1',
+      'purpose': type == 'service'
+          ? 'Guardar fotos privadas para la demo, hasta que las elimines. Sin envío a IA externa.'
+          : 'Participación opcional en un futuro dataset. No se entrena ningún modelo en esta demo.',
+    });
+  }
+
+  Future<Map<String, dynamic>?> questionnaire() =>
+      _client.getNullable('/questionnaires/latest');
+  Future<void> saveQuestionnaire(Map<String, String> answers) async {
+    await _client.postJson('/questionnaires', {
+      'answers': answers.entries
+          .map(
+            (e) => {
+              'question_key': e.key,
+              'answer_value': e.value,
+              'answer_type': 'single',
+            },
+          )
+          .toList(),
+    });
+  }
+
+  Future<Map<String, dynamic>> buildProfile() =>
+      _client.postJson('/skin-profile/build', {});
+  Future<Map<String, dynamic>> recommend(String type) =>
+      _client.postJson('/recommendations?routine_type=$type', {});
+  Future<List<dynamic>> photos() => _client.getList('/photos');
+  Future<List<dynamic>> analyses() => _client.getList('/analysis/history');
+  Future<String> uploadPhoto(String type, Uint8List bytes) async {
+    final response = await _client.postMultipart(
+      '/photos',
+      fields: {'photo_type': type},
+      files: {'file': UploadFile(bytes: bytes, filename: '$type.jpg')},
+    );
+    return response['photo_id'] as String;
+  }
+
+  Future<void> deletePhoto(String id) => _client.delete('/photos/$id');
+  Future<Map<String, dynamic>> demoAnalysis(List<String> ids) =>
+      _client.postJson('/analysis', {'photo_ids': ids});
 
   Future<UserProfile> me() async {
     final json = await _client.get('/users/me');
@@ -75,7 +143,9 @@ class AsesorApi {
     });
     final log = json['log'];
     if (log is! Map<String, dynamic>) {
-      throw ApiException('Respuesta inesperada del servidor al guardar la rutina.');
+      throw ApiException(
+        'Respuesta inesperada del servidor al guardar la rutina.',
+      );
     }
     return RoutineLog.fromJson(log);
   }

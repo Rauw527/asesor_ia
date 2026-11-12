@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.auth import UserLogin, UserOut, UserRegister
-from app.services.auth_service import authenticate, login, register
-from sqlalchemy.orm import Session
+from app.services.auth_service import login, register
 
 router = APIRouter(tags=["auth"])
 

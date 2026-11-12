@@ -6,16 +6,20 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user, get_db
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.exceptions import DomainError
+from app.models import SkinEvolutionLog, User
 from app.services.gemini_service import GeminiError
+from app.services.photo_service import private_path
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,12 @@ def _configure_logging(level: str) -> None:
 def create_app() -> FastAPI:
     config = get_settings()
     _configure_logging(config.log_level)
+    if config.environment not in {"development", "test"} and (
+        "secret_key" not in config.model_fields_set
+        or config.secret_key == "dev-secret-change-me"
+        or len(config.secret_key) < 32
+    ):
+        raise RuntimeError("Configura SECRET_KEY con al menos 32 caracteres para este entorno.")
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -46,8 +56,8 @@ def create_app() -> FastAPI:
         title=config.app_name,
         version=config.app_version,
         description=(
-            "Phase 1 — Skincare: diagnóstico facial, auditoría INCI y tracker "
-            "de evolución mensual con Gemini Vision."
+            "Demo Android de orientación cosmética: cuestionario, rutinas, "
+            "fotografías privadas y consentimiento. IA externa desactivada por defecto."
         ),
         lifespan=lifespan,
     )
@@ -81,11 +91,20 @@ def create_app() -> FastAPI:
 
     media_dir = config.storage_dir
     media_dir.mkdir(parents=True, exist_ok=True)
-    app.mount(
-        f"{config.api_v1_prefix}/media",
-        StaticFiles(directory=media_dir),
-        name="media",
-    )
+
+    @app.get(f"{config.api_v1_prefix}/media/{{relative_path:path}}")
+    def legacy_media(
+        relative_path: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    ):
+        log = db.scalar(
+            select(SkinEvolutionLog).where(
+                SkinEvolutionLog.user_id == user.id, SkinEvolutionLog.image_path == relative_path
+            )
+        )
+        path = private_path(relative_path)
+        if log is None or not path.is_file():
+            raise HTTPException(404, "Fotografía no encontrada")
+        return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
     def _health() -> dict[str, Any]:
         return {
@@ -93,6 +112,7 @@ def create_app() -> FastAPI:
             "version": config.app_version,
             "environment": config.environment,
             "gemini_configured": config.gemini_enabled,
+            "external_ai_enabled": config.enable_experimental_ai,
             "gemini_model": config.gemini_model,
             "database": "sqlite" if config.is_sqlite else "postgresql",
         }

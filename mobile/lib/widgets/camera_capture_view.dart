@@ -202,7 +202,9 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
       widget.onImageCaptured(bytes);
     } on CameraException catch (error) {
       if (!mounted) return;
-      setState(() => _error = 'No se pudo tomar la foto. ${error.description ?? ''}');
+      setState(
+        () => _error = 'No se pudo tomar la foto. ${error.description ?? ''}',
+      );
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = 'No se pudo tomar la foto: $error');
@@ -265,9 +267,7 @@ class _CameraCaptureViewState extends State<CameraCaptureView>
           ),
         ),
         if (widget.showOval)
-          Positioned.fill(
-            child: CustomPaint(painter: _OvalScrimPainter()),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _OvalScrimPainter())),
         Positioned(
           left: 16,
           right: 16,
@@ -414,10 +414,7 @@ class _Pill extends StatelessWidget {
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
-              text,
-              style: TextStyle(color: color, fontSize: 12),
-            ),
+            child: Text(text, style: TextStyle(color: color, fontSize: 12)),
           ),
         ],
       ),
@@ -493,10 +490,7 @@ class _CameraPlaceholder extends StatelessWidget {
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
-              if (action != null) ...[
-                const SizedBox(height: 20),
-                action!,
-              ],
+              if (action != null) ...[const SizedBox(height: 20), action!],
             ],
           ),
         ),
@@ -522,7 +516,10 @@ class _OvalScrimPainter extends CustomPainter {
       Path()..addOval(oval),
     );
 
-    canvas.drawPath(scrim, Paint()..color = Colors.black.withValues(alpha: 0.5));
+    canvas.drawPath(
+      scrim,
+      Paint()..color = Colors.black.withValues(alpha: 0.5),
+    );
     canvas.drawOval(
       oval,
       Paint()

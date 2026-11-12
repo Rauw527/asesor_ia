@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, get_current_user
+from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.questionnaire import (
     QuestionnaireCreate,
@@ -14,7 +15,6 @@ from app.services.questionnaire_service import (
     get_latest_questionnaire,
     save_questionnaire,
 )
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["questionnaires"])
 

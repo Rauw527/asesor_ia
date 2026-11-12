@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 
 from app.core.config import get_settings
 
@@ -31,13 +32,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             bytes.fromhex(salt_hex),
             int(iterations),
         )
-        return expected.hex() == dk_hex
+        return hmac.compare_digest(expected.hex(), dk_hex)
     except Exception:
         return False
 
 
 def create_access_token(subject: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expire = now + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {
         "sub": subject,

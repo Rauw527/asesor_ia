@@ -1,70 +1,67 @@
-"""Photo upload business logic."""
-
-from __future__ import annotations
+"""Private photo storage; authorization and decoding precede every write."""
 
 import uuid
 from pathlib import Path
 
-from fastapi import HTTPException, status, UploadFile
+from fastapi import HTTPException
 
 from app.core.config import get_settings
 from app.repositories import photo_repository
 from app.schemas.photo import PhotoOut, PhotoUploadResponse
+from app.services.consent_service import require_service_consent
+from app.services.image_service import prepare_image, read_upload
 
-settings = get_settings()
-
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
+PHOTO_TYPES = {"front", "left", "right", "frontal", "left_cheek", "right_cheek"}
 
 
-def save_uploaded_file(db, user_id: str, photo_type: str, file: UploadFile) -> PhotoUploadResponse:
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tipo de archivo no permitido. Usa JPEG, PNG o WEBP.",
+def private_path(relative_path):
+    root = get_settings().storage_dir.resolve()
+    candidate = (root / relative_path).resolve()
+    if not candidate.is_relative_to(root) or candidate == root:
+        raise HTTPException(404, "Fotografía no encontrada")
+    return candidate
+
+
+def save_uploaded_file(db, user_id, photo_type, file):
+    consent = require_service_consent(db, user_id)
+    if photo_type not in PHOTO_TYPES:
+        raise HTTPException(422, "Tipo de foto no válido")
+    image = prepare_image(read_upload(file, get_settings()), get_settings())
+    relative = f"photos/{user_id}/{uuid.uuid4().hex}.jpg"
+    path = private_path(relative)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(image.data)
+    try:
+        photo = photo_repository.save_photo(
+            db,
+            user_id=user_id,
+            photo_type=photo_type,
+            storage_path=relative,
+            original_filename=Path(file.filename or "foto.jpg").name[:255],
+            content_type="image/jpeg",
+            size_bytes=len(image.data),
+            consent_version=consent.version,
         )
-
-    content = file.file.read()
-    size_mb = len(content) / (1024 * 1024)
-    if size_mb > settings.max_upload_mb:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Archivo demasiado grande (máx. {settings.max_upload_mb} MB).",
-        )
-
-    storage_dir = Path(settings.storage_dir)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-
-    ext = Path(file.filename or "").suffix or ".jpg"
-    filename = f"{user_id}/{photo_type}/{uuid.uuid4().hex}{ext}"
-    disk_path = storage_dir / filename
-    disk_path.parent.mkdir(parents=True, exist_ok=True)
-    disk_path.write_bytes(content)
-
-    # Consent version: require service consent (A) to store photos
-    from app.repositories import consent_repository
-
-    consent = consent_repository.get_consent(db, user_id, "service")
-    consent_version = consent.version if consent else None
-
-    photo = photo_repository.save_photo(
-        db,
-        user_id=user_id,
-        photo_type=photo_type,
-        storage_path=str(disk_path),
-        original_filename=file.filename,
-        content_type=file.content_type or "image/jpeg",
-        size_bytes=len(content),
-        consent_version=consent_version,
-    )
-    db.commit()
-
+        db.commit()
+    except Exception:
+        db.rollback()
+        path.unlink(missing_ok=True)
+        raise
     return PhotoUploadResponse(
         photo_id=photo.id,
         photo_type=photo.photo_type,
-        message="Foto guardada correctamente",
+        message="Foto privada guardada. No se ha enviado a un proveedor de IA.",
     )
 
 
-def list_user_photos(db, user_id: str) -> list[PhotoOut]:
-    photos = photo_repository.list_photos(db, user_id)
-    return [PhotoOut.model_validate(p) for p in photos]
+def list_user_photos(db, user_id):
+    return [PhotoOut.model_validate(p) for p in photo_repository.list_photos(db, user_id)]
+
+
+def delete_photo(db, user_id, photo_id):
+    photo = photo_repository.get_photo(db, photo_id, user_id)
+    if photo is None:
+        raise HTTPException(404, "Fotografía no encontrada")
+    private_path(photo.storage_path).unlink(missing_ok=True)
+    db.delete(photo)
+    db.commit()

@@ -24,7 +24,8 @@ class _FaceScannerPageState extends State<FaceScannerPage> {
 
     if (result == null) {
       final message =
-          skin.error ?? 'No pudimos analizar la imagen. Prueba con otra selfie.';
+          skin.error ??
+          'No pudimos analizar la imagen. Prueba con otra selfie.';
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(

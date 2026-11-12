@@ -5,14 +5,14 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, String, Text, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import JSON, Boolean, String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
 from app.models.types import UTCDateTime, new_id, utcnow
 
 if TYPE_CHECKING:
-    from app.models.ingredient import Ingredient
+    pass
 
 
 class CatalogProduct(Base):

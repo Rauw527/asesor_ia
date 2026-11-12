@@ -9,8 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.models import INCIIngredient
-from app.models.ingredient import Ingredient
-from app.models.catalog_product import CatalogProduct
 from app.repositories.catalog_product_repository import seed_products
 from app.repositories.ingredient_repository import seed_ingredients
 from app.repositories.user_repository import get_or_create_demo_user

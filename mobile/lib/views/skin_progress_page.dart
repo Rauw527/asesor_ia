@@ -169,8 +169,8 @@ class _SkinProgressPageState extends State<SkinProgressPage> {
               'Desliza para revelar tu evolución.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             MetricCard(
@@ -196,10 +196,9 @@ class _SkinProgressPageState extends State<SkinProgressPage> {
             const _SectionTitle('Resumen'),
             Text(
               result.summaryNotes,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(height: 1.5),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.5),
             ),
             if (result.recommendedRoutineAdjustments.isNotEmpty) ...[
               const SizedBox(height: 20),
@@ -224,8 +223,8 @@ class _SkinProgressPageState extends State<SkinProgressPage> {
             'API en el momento de analizarlas o compararlas.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -326,10 +325,7 @@ class _BaselineCard extends StatelessWidget {
                 ],
               ),
             ),
-            TextButton(
-              onPressed: onReset,
-              child: const Text('Cambiar'),
-            ),
+            TextButton(onPressed: onReset, child: const Text('Cambiar')),
           ],
         ),
       ),
@@ -348,10 +344,9 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

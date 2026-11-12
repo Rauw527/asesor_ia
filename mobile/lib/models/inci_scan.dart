@@ -17,7 +17,8 @@ class InciScan {
   factory InciScan.fromJson(Map<String, dynamic> json) {
     final alternative = json['safe_alternative'];
     return InciScan(
-      productName: json['product_name'] as String? ?? 'Producto sin identificar',
+      productName:
+          json['product_name'] as String? ?? 'Producto sin identificar',
       keyIngredients: (json['key_ingredients'] as List<dynamic>? ?? [])
           .whereType<String>()
           .toList(growable: false),

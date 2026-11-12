@@ -14,7 +14,10 @@ class AppConfig {
 
   static const String _override = String.fromEnvironment('API_BASE_URL');
 
+  static String? serverOverride;
+
   static String get apiBaseUrl {
+    if (serverOverride != null) return serverOverride!;
     if (_override.isNotEmpty) return _override;
     if (kIsWeb) return 'http://localhost:8000';
     if (defaultTargetPlatform == TargetPlatform.android) {
@@ -35,7 +38,9 @@ class AppConfig {
   }
 
   static Uri mediaUrl(String relativeOrAbsolute) {
-    if (relativeOrAbsolute.startsWith('http')) return Uri.parse(relativeOrAbsolute);
+    if (relativeOrAbsolute.startsWith('http')) {
+      return Uri.parse(relativeOrAbsolute);
+    }
     return Uri.parse('$apiBaseUrl$relativeOrAbsolute');
   }
 }

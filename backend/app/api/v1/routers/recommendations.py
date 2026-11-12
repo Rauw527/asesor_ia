@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
@@ -12,7 +13,6 @@ from app.services.recommendation_service import (
     get_routine,
     list_user_routines,
 )
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["recommendations"])
 
@@ -36,6 +36,8 @@ def create_recommendation(
     from app.services.skin_profile_service import get_user_assessment
 
     assessment = get_user_assessment(db, current_user.id)
+    if assessment is None or not assessment.questionnaire_completed:
+        raise HTTPException(409, "Completa el cuestionario antes de generar una rutina.")
     routine = generate_routine(db, current_user.id, routine_type, assessment)
     return RoutineOut.model_validate(routine)
 

@@ -127,7 +127,6 @@ def scan(
             config=config,
         )
 
-    storage.save(image.data, "inci")
     product_repository.upsert_product(
         db,
         user,

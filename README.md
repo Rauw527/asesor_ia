@@ -1,185 +1,90 @@
-# Asesor IA — Personal Image & Style Co-Pilot
+# Facial y Moda — demo Android
 
-Phase 1 (Skincare) of a personal-image co-pilot: a **FastAPI** backend that
-talks to **Gemini Vision** and a **Flutter** app that captures real photos,
-audits cosmetic labels against a deterministic INCI rule engine, tracks the
-daily routine and measures month-over-month skin progress.
+Demo funcional para organizar una rutina cosmética a partir de un cuestionario.
+Cliente Flutter, servidor FastAPI y SQLite local. La web React se conserva como
+referencia, pero el flujo principal de esta versión es Android.
 
-No mocked analysis in the main flow: every diagnosis, comparison and label
-reading goes through the live API. The only fakes live in the automated tests.
+## Qué funciona
 
-```
-asesor_ia/
-├── backend/                 FastAPI + SQLAlchemy + Gemini
-│   ├── app/
-│   │   ├── api/v1/routers/  skin, inci, routine, users (+ products)
-│   │   ├── core/            settings, database, exceptions
-│   │   ├── models/          User, SkinProfile, Product, INCI_Ingredient...
-│   │   ├── repositories/    persistence helpers
-│   │   ├── schemas/         public contracts + LLM DTOs
-│   │   └── services/        gemini, skin, inci rules, storage, image
-│   ├── tests/               25 backend tests
-│   ├── Dockerfile
-│   └── requirements.txt
-├── mobile/                  Flutter app (Android first)
-│   ├── lib/controllers/     5 ChangeNotifier controllers
-│   ├── lib/models/          API models
-│   ├── lib/services/        HTTP client, typed API facade, photo store
-│   ├── lib/views/           home, scanner, result, progress, INCI
-│   └── lib/widgets/         camera view, before/after slider, metric card
-├── odd/tasks/skincare-mvp.md  Specs, tasks and verification log
-├── docker-compose.yml       pgvector + redis + api
-└── README.md
-```
+- Registro, inicio de sesión y cierre de sesión. El token solo vive en memoria.
+- Cuestionario de siete pasos con opciones desconocidas y posibilidad de omitir.
+- Perfil basado en respuestas declaradas, sin transformar incertidumbre en sensibilidad baja.
+- Rutinas básicas de mañana/noche, identificadas como reglas de demostración.
+- Checklist diario persistente y racha por días con al menos un período completo.
+- Captura o selección de tres fotos, vista previa y envío opcional.
+- Consentimientos separados para guardar fotos y expresar interés futuro en entrenamiento.
+- Fotos privadas: lectura y borrado requieren sesión y propiedad del recurso.
+- Historial de capturas en modo demostración, sin predicciones ni porcentajes inventados.
+- Registro histórico de decisiones de consentimiento con fecha, finalidad y versión.
 
-## Requirements
+El cuestionario y las rutinas funcionan aunque se rechacen ambos consentimientos.
+El permiso de entrenamiento nunca es requisito para recibir el servicio.
 
-- Python 3.11+
-- Flutter 3.41+ / Dart 3.11+
-- A `GEMINI_API_KEY` from Google AI Studio (without it the API boots but every
-  AI endpoint returns HTTP 503)
-- Optional: Docker for PostgreSQL + pgvector + Redis
+## Límites de esta versión
 
-## Backend
+No hay un modelo de piel entrenado ni validado. El generador usa reglas básicas;
+no prescribe tratamientos, no elige productos concretos ni analiza su seguridad.
+Las preferencias de tiempo y presupuesto se muestran, pero todavía no hay una
+optimización del catálogo basada en ellas. No hay exportación de dataset ni entrenamiento.
+
+La app no expone las herramientas antiguas de análisis Gemini, comparación e INCI.
+Sus rutas del servidor requieren sesión y están desactivadas por defecto mediante
+`ENABLE_EXPERIMENTAL_AI=false`. Activarlas es un experimento aparte: requiere
+revisar permisos de proveedor, tratamiento de datos y validación de resultados.
+No hace falta una clave Gemini para usar esta demo.
+
+## Probar en tu teléfono
+
+Consulta [PROBAR_ANDROID.md](PROBAR_ANDROID.md). El APK necesita un servidor;
+no es una app autónoma sin conexión. La dirección se introduce en la pantalla
+de acceso, por lo que no es necesario recompilar para cambiar de PC.
+
+## Preparar el servidor en otro PC
+
+Requisitos: Python 3.11 o superior. Verificado aquí con Python 3.12.
 
 ```powershell
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-Copy-Item .env.example .env      # then set GEMINI_API_KEY
-uvicorn app.main:app --reload --port 8000
+.venv\Scripts\python.exe -m pip install -r requirements-verified.txt
+Copy-Item .env.example .env
+.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-- Health: <http://localhost:8000/health>
-- Swagger UI: <http://localhost:8000/docs>
-- Default database: SQLite at `backend/data/asesor_ia.db` (zero setup)
-- Demo user: created on first request (`demo@asesor.ia`)
-- INCI seed: 39 ingredients and 13 conflict rules inserted on startup
+`requirements-verified.txt` fija las versiones usadas durante la comprobación
+en Windows/Python 3.12. Los archivos `requirements.txt` y `requirements-dev.txt`
+conservan los rangos generales para futuras actualizaciones deliberadas.
 
-### Docker (PostgreSQL + pgvector + Redis)
+La base de datos y los archivos se crean en `backend/data/`. No se requieren
+PostgreSQL, Redis ni Docker para la demo. Las tablas nuevas se crean al iniciar;
+no se eliminan tablas existentes. Conserva copia de datos antes de actualizar
+una instalación que ya contenga información importante.
 
-```powershell
-Copy-Item backend/.env.example backend/.env   # set GEMINI_API_KEY
-docker compose up --build
-```
+La configuración local usa una clave de sesión privada generada. Si no hay
+`SECRET_KEY` en desarrollo se genera una temporal en memoria: reiniciar el
+servidor invalida las sesiones. En producción se exige una clave explícita de
+al menos 32 caracteres. Nunca subas `.env`, bases de datos o fotos a GitHub.
 
-The compose file overrides `DATABASE_URL` and `REDIS_URL` to the containers.
-Redis is optional: without it the INCI cache falls back to an in-process TTL
-cache.
+## Compilar Android
 
-### Environment variables
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | — | Required for AI endpoints |
-| `GEMINI_MODEL` | `gemini-flash-latest` | Override to pin an exact model |
-| `GEMINI_TIMEOUT_SECONDS` | `60` | Per-request timeout |
-| `DATABASE_URL` | SQLite file | `postgresql+psycopg://...` for pgvector |
-| `REDIS_URL` | empty | Optional INCI cache |
-| `AFFILIATE_SEARCH_TEMPLATE` | Amazon search | Affiliate URL template |
-| `AFFILIATE_TAG` | empty | Tracking tag appended server-side |
-| `MAX_UPLOAD_MB` | `8` | Upload limit |
-| `IMAGE_MAX_SIDE` | `1024` | Server-side downscale before Gemini |
-| `DEMO_USER_EMAIL` | `demo@asesor.ia` | Identity used until auth exists |
-| `CORS_ORIGINS` | `*` | Comma-separated allowed origins |
-
-> **Model correction.** `gemini-1.5-flash` was retired by Google. The default is
-> now `gemini-flash-latest`; set `GEMINI_MODEL` if you need a pinned version.
-
-## API
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/v1/skin/analyze` | Facial diagnosis from a selfie (`file`) |
-| `POST` | `/api/v1/skin/compare-progress` | Day 1 vs. today (`baseline_file`, `current_file`, `days_elapsed`) |
-| `POST` | `/api/v1/inci/scan` | OCR label + conflict audit (`file`) |
-| `POST` | `/api/v1/routine/checkin` | Save AM/PM checklist |
-| `GET` | `/api/v1/routine/today?date=YYYY-MM-DD` | Checklist state + streak |
-| `GET` | `/api/v1/users/me` | Demo user + skin profile |
-| `GET` | `/api/v1/products` | Active routine products |
-| `POST` | `/api/v1/products` | Register a product for future INCI audits |
-| `GET` | `/api/v1/skin/history` | Evolution log with image URLs |
-| `GET` | `/health` | Liveness + whether Gemini is configured |
-
-Error contract: `{"detail": "...", "code": "..."}`.
-
-- `503 ai_unavailable` — missing/invalid `GEMINI_API_KEY` or provider failure
-- `422 unusable_image` — no face detected, or unreadable INCI label
-- `400 domain_error` — invalid routine step, bad upload, etc.
-
-Example:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/skin/analyze \
-  -F "file=@selfie.jpg"
-```
-
-## Mobile app
+Requisitos: Flutter 3.41.9 / Dart 3.11.5 o versión compatible, JDK 17 o superior
+y herramientas Android. El proyecto conserva sus versiones de Gradle y plugins.
 
 ```powershell
 cd mobile
 flutter pub get
-
-# Web (Chrome): localhost is the host machine
-flutter run -d chrome
-
-# Android emulator: the app picks 10.0.2.2 automatically
-flutter run
+flutter analyze
+flutter test
+flutter build apk --debug
 ```
 
-`AppConfig` resolves the base URL per platform, so `--dart-define` is only
-needed when the API is not on the same machine. An explicit
-`--dart-define=API_BASE_URL=...` always wins over the platform default, and
-`flutter run` must be restarted (not hot-reloaded) for a new value to apply.
+APK: `mobile/build/app/outputs/flutter-apk/app-debug.apk`.
+La versión debug permite HTTP para pruebas en red local. El manifiesto principal
+desactiva tráfico HTTP en compilaciones de distribución; para internet usa HTTPS.
+La app rechaza direcciones HTTP ajenas a localhost o rangos privados.
+No se habilitan copias de seguridad de datos de la app en Android.
 
-For a **physical Android device** on the same Wi-Fi, use the machine's LAN IP:
-
-```powershell
-flutter run --dart-define=API_BASE_URL=http://192.168.1.20:8000
-```
-
-Or forward the port over USB and keep `localhost`:
-
-```bash
-adb reverse tcp:8000 tcp:8000
-flutter run --dart-define=API_BASE_URL=http://localhost:8000
-```
-
-The Android manifest already allows cleartext HTTP for local development;
-remove `android:usesCleartextTraffic="true"` before shipping over HTTPS.
-
-### What the app does
-
-- **Home** — greeting, stored skin profile, AM/PM checklist with live streak,
-  shortcuts to the three tools.
-- **Diagnóstico facial** — live camera with an oval guide and a client-side
-  luminance meter. The photo goes to Gemini; the result shows skin type,
-  hydration, undertone, detected issues, routine recommendations, product
-  suggestions and the mandatory disclaimer.
-- **Mi progreso** — stores the Day 1 photo on-device, then compares it with a
-  new capture through the multimodal endpoint. Before/after slider, progress
-  percentage, hydration and texture deltas, routine adjustments.
-- **Auditar INCI** — captures the label, shows key ingredients and conflicts
-  against the active routine, offers a safe alternative and lets the user add
-  the scanned product so future audits know about it.
-
-### Mobile architecture
-
-`lib/services/asesor_api.dart` is the typed facade over the four required
-endpoints plus the supporting ones. Controllers are `ChangeNotifier`s provided
-at the root with `provider`:
-
-- `UserController`, `SkinController`, `ProgressController`,
-  `InciController`, `RoutineController`
-
-The checklist is optimistic and serialized per period, so fast taps cannot
-overwrite each other. The light meter reads the mean luma of the camera preview
-stream (`YUV420` on Android, `BGRA` on iOS) and warns before spending a request.
-
-## Tests
-
-Backend (Windows virtualenv):
+## Verificación
 
 ```powershell
 cd backend
@@ -187,42 +92,50 @@ cd backend
 .venv\Scripts\python.exe -m ruff check .
 ```
 
-Mobile:
+Pruebas del servidor: autenticación, aislamiento entre dos cuentas, consentimiento,
+subida inválida, fotos privadas, borrado de archivo, demo visual, perfil/rutinas,
+checklist y contratos heredados protegidos. Las pruebas usan SQLite temporal,
+imágenes sintéticas y dobles del proveedor: no envían imágenes a Gemini.
 
-```powershell
-cd mobile
-flutter analyze
-flutter test
-flutter build apk --debug
-```
+Las pruebas Flutter comprueban acceso, cierre de sesión, cuestionario, permisos,
+envío del token en HTTP y manejo de sesiones caducadas, además de contratos de datos.
+Las vistas previas usan datos ficticios y tamaño de teléfono; no sustituyen
+una prueba de cámara e instalación en un Android físico.
 
-Current state: **25 backend tests**, **7 Flutter tests**, `flutter analyze`
-clean and a debug APK building successfully.
+## Rutas principales
 
-## Privacy
+Todas las rutas personales exigen `Authorization: Bearer <token>`.
 
-- Photos are stored on the device for the baseline; they are sent to the API
-  only when the user runs an analysis or comparison.
-- The server stores uploaded images under `backend/data/storage` to power
-  `/skin/history`. Delete that folder (and the DB rows) to purge them.
-- Phase 1 has no authentication and uses a demo user.
-- The output is cosmetic guidance, not a medical diagnosis; every AI response
-  carries a disclaimer.
+| Método | Ruta bajo `/api/v1` | Uso |
+|---|---|---|
+| POST | `/auth/register`, `/auth/login` | Cuenta y sesión |
+| GET | `/users/me` | Mi perfil |
+| GET / POST | `/consents` | Decisiones de privacidad |
+| GET / POST | `/photos` | Mis fotos / subida con permiso A |
+| GET / DELETE | `/photos/{id}/content`, `/photos/{id}` | Leer / eliminar mi foto |
+| GET / POST | `/questionnaires/latest`, `/questionnaires` | Cuestionario |
+| POST | `/skin-profile/build` | Construir perfil declarado |
+| POST | `/recommendations?routine_type=morning` o `night` | Generar guía demo |
+| GET | `/recommendations` | Mis rutinas guardadas |
+| GET / POST | `/routine/today`, `/routine/checkin` | Seguimiento diario |
+| POST / GET | `/analysis`, `/analysis/history` | Registrar / consultar demo visual |
+| GET | `/analysis/records/{id}` | Un análisis propio |
+| GET | `/catalog/products` | Catálogo de referencia, separado de productos propios |
+| GET / POST | `/products` | Mis productos, separado del catálogo |
 
-## Phase 2 slots
+Estado: `/health`. Documentación interactiva: `/docs`.
+`/media/...` ya no publica una carpeta: comprueba sesión y propiedad de cada
+archivo del historial heredado.
 
-`SkinProfile` already persists `colorimetry_season`, `body_shape` and
-`style_preference`, and the Flutter `SkinProfile` model exposes them, so the
-outfit/style module can reuse the same tables and models without a migration.
+## Privacidad y próximos pasos
 
-## Troubleshooting
+Las fotos permanecen en el servidor configurado hasta que su dueño las elimine.
+Retirar el permiso A bloquea nuevas subidas y análisis; el borrado de fotos
+existentes se realiza desde la pantalla de privacidad. El permiso B registra
+una preferencia futura y no autoriza usos indefinidos: esta demo no exporta datos.
 
-| Symptom | Fix |
-| --- | --- |
-| `503 ai_unavailable` | Set `GEMINI_API_KEY` in `backend/.env` and restart |
-| `422 unusable_image` | Better light, no makeup, full face in frame, or a sharper label |
-| App shows connection error | Check `API_BASE_URL`, that the API runs on `0.0.0.0:8000`, and the firewall |
-| Emulator cannot reach the API | Use `10.0.2.2`, not `localhost` |
-| Browser shows `ERR_CONNECTION_TIMED_OUT` on `10.0.2.2:8000` | You are running Flutter **web**, where `10.0.2.2` is not the host. Run `flutter run -d chrome` with no `--dart-define`, or pass `http://localhost:8000` |
-| New `--dart-define` value ignored | `flutter run` reads it at build time: stop it and start again; hot reload/restart is not enough |
-| Camera permission denied | Grant it in system settings; the app falls back to the gallery |
+Antes de un piloto externo: desplegar con HTTPS, definir país y política de
+conservación, revisar textos de consentimiento y reglas cosméticas, añadir límites
+de solicitudes, monitorización, recuperación de cuenta y procedimientos de borrado
+de copias de seguridad. Se necesita revisión y validación adicional para convertir
+esta demo local en un producto comercial.

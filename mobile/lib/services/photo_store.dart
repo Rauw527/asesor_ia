@@ -23,10 +23,7 @@ class PhotoStore {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_baselinePathKey, file.path);
-    await prefs.setString(
-      _baselineDateKey,
-      DateTime.now().toIso8601String(),
-    );
+    await prefs.setString(_baselineDateKey, DateTime.now().toIso8601String());
     return file.path;
   }
 

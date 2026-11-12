@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.ingredient import IngredientOut
 from app.services.ingredient_service import list_ingredients
-from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["catalog-ingredients"])
 

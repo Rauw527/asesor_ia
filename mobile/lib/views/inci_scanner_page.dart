@@ -148,13 +148,9 @@ class InciScannerPage extends StatelessWidget {
               onPressed: controller.saved || controller.saving
                   ? null
                   : () => _addToRoutine(context),
-              icon: Icon(
-                controller.saved ? Icons.check : Icons.playlist_add,
-              ),
+              icon: Icon(controller.saved ? Icons.check : Icons.playlist_add),
               label: Text(
-                controller.saved
-                    ? 'Añadido a tu rutina'
-                    : 'Añadir a mi rutina',
+                controller.saved ? 'Añadido a tu rutina' : 'Añadir a mi rutina',
               ),
             ),
           const SizedBox(height: 10),
@@ -170,8 +166,8 @@ class InciScannerPage extends StatelessWidget {
             'un dermatólogo.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -309,10 +305,9 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
